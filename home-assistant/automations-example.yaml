@@ -1,0 +1,94 @@
+# Example Home Assistant Automations — Traktor Kontrol F1
+#
+# Paste these into your automations.yaml, or import via the HA UI (Settings > Automations > Import).
+# Replace placeholder entity IDs (light.desk_lamp, scene.cinema_mode, etc.) with your own.
+#
+# Pad note layout (see docs/f1-note-map.md for the full grid):
+#   Bottom row (row 1): notes 36–39   (pads 1–4, left to right)
+#   Row 2:              notes 40–43
+#   Row 3:              notes 44–47
+#   Top row (row 4):    notes 48–51
+#
+# All pads send on MIDI channel 1 (channel: 0 in zero-indexed MIDI convention).
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. Bottom-left pad (note 36) — toggle a light
+# ─────────────────────────────────────────────────────────────────────────────
+- alias: "F1 Pad 1 — Toggle desk lamp"
+  id: f1_pad1_toggle_desk_lamp
+  trigger:
+    - platform: state
+      entity_id: sensor.traktor_f1_midi_event
+      to: "note_on"
+  condition:
+    - condition: template
+      # Only fire when the note matches pad 1 (bottom-left) with a non-zero velocity
+      value_template: >
+        {{ state_attr('sensor.traktor_f1_midi_event', 'note') | int == 36
+           and state_attr('sensor.traktor_f1_midi_event', 'velocity') | int > 0 }}
+  action:
+    - service: light.toggle
+      target:
+        entity_id: light.desk_lamp
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. Bottom-second pad (note 37) — activate a scene
+# ─────────────────────────────────────────────────────────────────────────────
+- alias: "F1 Pad 2 — Cinema mode scene"
+  id: f1_pad2_cinema_scene
+  trigger:
+    - platform: state
+      entity_id: sensor.traktor_f1_midi_event
+      to: "note_on"
+  condition:
+    - condition: template
+      value_template: >
+        {{ state_attr('sensor.traktor_f1_midi_event', 'note') | int == 37
+           and state_attr('sensor.traktor_f1_midi_event', 'velocity') | int > 0 }}
+  action:
+    - service: scene.turn_on
+      target:
+        entity_id: scene.cinema_mode
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. Fader / knob (CC controller 0) — set light brightness
+#    The F1's first fader sends CC 0 on channel 1, values 0–127.
+#    This maps that range to 0–100% brightness.
+# ─────────────────────────────────────────────────────────────────────────────
+- alias: "F1 Fader 1 — Set desk lamp brightness"
+  id: f1_fader1_desk_lamp_brightness
+  trigger:
+    - platform: state
+      entity_id: sensor.traktor_f1_midi_event
+      to: "control_change"
+  condition:
+    - condition: template
+      value_template: >
+        {{ state_attr('sensor.traktor_f1_midi_event', 'controller') | int == 0 }}
+  action:
+    - service: light.turn_on
+      target:
+        entity_id: light.desk_lamp
+      data:
+        # Map 0–127 → 0–255 (HA brightness scale)
+        brightness: >
+          {{ ((state_attr('sensor.traktor_f1_midi_event', 'value') | int) / 127 * 255) | int }}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. Top-left pad (note 48) — run a script
+# ─────────────────────────────────────────────────────────────────────────────
+- alias: "F1 Pad 13 (top-left) — Good morning script"
+  id: f1_pad13_good_morning
+  trigger:
+    - platform: state
+      entity_id: sensor.traktor_f1_midi_event
+      to: "note_on"
+  condition:
+    - condition: template
+      value_template: >
+        {{ state_attr('sensor.traktor_f1_midi_event', 'note') | int == 48
+           and state_attr('sensor.traktor_f1_midi_event', 'velocity') | int > 0 }}
+  action:
+    - service: script.turn_on
+      target:
+        entity_id: script.good_morning

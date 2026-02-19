@@ -1,0 +1,34 @@
+# Home Assistant MQTT Sensor — Traktor Kontrol F1
+#
+# Add this block to your configuration.yaml (or to a packages file if you use packages).
+# Restart Home Assistant after adding it.
+#
+# This sensor tracks the most recent MIDI event from the F1.
+# Automations can trigger on state changes and read attributes for full event detail.
+
+mqtt:
+  sensor:
+    - name: "Traktor F1 MIDI Event"
+      unique_id: traktor_f1_midi_event
+      # midi2mqtt publishes raw events to this topic (matches midi2mqtt.yaml events.base)
+      state_topic: "midi/events"
+      # The event_type field (e.g. "note_on", "note_off", "control_change") becomes the state
+      value_template: "{{ value_json.event_type }}"
+      # All MIDI fields are exposed as attributes for use in automations
+      json_attributes_topic: "midi/events"
+      json_attributes_template: >
+        {{
+          {
+            "note":       value_json.note       | default(none),
+            "key":        value_json.key        | default(none),
+            "octave":     value_json.octave     | default(none),
+            "velocity":   value_json.velocity   | default(none),
+            "channel":    value_json.channel    | default(none),
+            "controller": value_json.controller | default(none),
+            "value":      value_json.value      | default(none),
+            "timestamp":  value_json.timestamp  | default(none)
+          } | tojson
+        }}
+      # Keep the last event visible even when no new messages arrive
+      expire_after: 0
+      icon: mdi:piano

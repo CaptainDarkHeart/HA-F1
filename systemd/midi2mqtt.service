@@ -1,0 +1,21 @@
+[Unit]
+Description=MIDI to MQTT bridge for Traktor Kontrol F1
+# Wait for the network to be fully online before starting
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Update this path to wherever the midi2mqtt binary lives on your system.
+# Default assumes you cloned midi2mqtt into your home directory and built it there.
+ExecStart=%h/midi2mqtt/midi2mqtt -config %h/.config/midi2mqtt/midi2mqtt.yaml
+
+# Restart automatically if the process exits unexpectedly
+Restart=on-failure
+RestartSec=5s
+
+# Run as the current user (install with: systemctl --user enable midi2mqtt)
+# If you need system-wide USB/MIDI access, see docs/ for running as root instead.
+
+[Install]
+WantedBy=default.target

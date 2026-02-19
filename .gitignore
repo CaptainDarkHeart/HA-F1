@@ -1,0 +1,25 @@
+# Secrets — never commit credentials
+# If you add passwords or tokens to any YAML file, add that file here
+*.secret.yaml
+*.secret.yml
+secrets.yaml
+secrets.yml
+.env
+.env.*
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artefacts from midi2mqtt if cloned alongside
+midi2mqtt/midi2mqtt
+midi2mqtt/*.out
+
+# Logs
+*.log
