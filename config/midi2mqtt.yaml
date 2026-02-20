@@ -1,37 +1,65 @@
 # midi2mqtt configuration — Traktor Kontrol F1
 # Upstream project: https://github.com/bzeiss/midi2mqtt
 #
-# IMPORTANT: This file may contain sensitive network addresses.
-# Do NOT commit passwords or credentials. See .gitignore.
+# IMPORTANT: Do NOT commit passwords or credentials. See .gitignore.
+#
+# NOTE ON PLATFORM:
+# This config targets Linux (Raspberry Pi / any systemd host).
+# On macOS, NIHardwareAgent intercepts all F1 MIDI at the driver level and
+# prevents any third-party tool from receiving events — even via IAC routing.
+# The F1 must be plugged into a Linux host for midi2mqtt to work.
+#
+# Linux MIDI port name: "Traktor Kontrol F1 MIDI 1" (class-compliant, no driver needed)
+# Confirm on your system with: midi2mqtt -list-ports
 
-mqtt:
-  # Update this to your MQTT broker's IP address (e.g. your Home Assistant host)
-  broker: "192.168.1.x"   # <-- CHANGE THIS
-  port: 1883
-  # Uncomment and fill in if your broker requires authentication:
-  # username: ""
-  # password: ""           # <-- NEVER commit a real password here
-  client_id: "midi2mqtt_traktor_f1"
+mqtt_server:
+  broker:
+    host: "192.168.1.x"    # <-- CHANGE THIS to your MQTT broker / HA host IP
+    port: 1883
+    protocol: "mqtt"       # mqtt | mqtts | ws | wss
+
+  client:
+    client_id: "midi2mqtt_traktor_f1"
+    clean_session: true
+    keepalive: 60
+
+  auth:
+    username: ""
+    password: ""           # <-- fill in if your broker requires auth; NEVER commit real credentials
+
+  connection:
+    retry_interval: 10
+    max_retries: 3
+    timeout: 30
+
+mqtt_publications:
+  - type: custom_json
+    enabled: true
+    topic: "midi/events"
+    qos: 1
+    retain: false
+  - type: home_assistant
+    enabled: true
+    topic: "homeassistant/sensor/traktor_f1"
+    qos: 1
+    retain: false
+    unique_id: "traktor_f1"
+    device:
+      identifiers: ["traktor_f1"]
+      name: "Traktor F1"
+      manufacturer: "Native Instruments"
 
 midi:
-  # This is the standard class-compliant MIDI port name for the F1 on Linux.
-  # Run `midi2mqtt -list` to confirm the exact name on your system.
+  # Standard class-compliant USB MIDI port name on Linux.
+  # Run `midi2mqtt -list-ports` to confirm the exact name on your system.
   port: "Traktor Kontrol F1 MIDI 1"
 
-discovery:
-  # Enable Home Assistant native MQTT discovery
-  enabled: true
-  prefix: "homeassistant"
+  event_types:
+    - note_on
+    - note_off
+    - cc:0    # Fader 1
+    - cc:1    # Fader 2
+    - cc:2    # Fader 3
+    - cc:3    # Fader 4
 
-device:
-  name: "Traktor F1"
-  manufacturer: "Native Instruments"
-  model: "Traktor Kontrol F1"
-  identifiers:
-    - "traktor_f1"
-
-topic:
-  # Base topic for all MIDI events from this device
-  base: "homeassistant/sensor/traktor_f1"
-  # Raw MIDI events are published here (used by HA sensor state_topic)
-  events: "midi/events"
+log_level: "INFO"

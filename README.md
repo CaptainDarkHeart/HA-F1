@@ -9,6 +9,12 @@ class-compliant USB MIDI bridged over your local network.
 Traktor F1  →  USB  →  Linux host  →  midi2mqtt  →  MQTT broker (HA)  →  automations
 ```
 
+> **macOS note:** The F1 cannot be used with midi2mqtt on macOS. NI's
+> `NIHardwareAgent` daemon intercepts all F1 MIDI traffic at the driver level —
+> it exposes the port name to CoreMIDI but consumes all events before they
+> arrive. This is not fixable via IAC routing or any third-party bridge.
+> **The F1 must be plugged into a Linux host.** A Raspberry Pi works perfectly.
+
 ---
 
 ## What's in this repo
@@ -16,7 +22,7 @@ Traktor F1  →  USB  →  Linux host  →  midi2mqtt  →  MQTT broker (HA)  �
 | Path | Purpose |
 |------|---------|
 | `config/midi2mqtt.yaml` | Ready-to-use midi2mqtt config for the F1 |
-| `systemd/midi2mqtt.service` | systemd user-service for auto-start |
+| `systemd/midi2mqtt.service` | systemd user-service for auto-start on Linux |
 | `home-assistant/configuration.yaml` | MQTT sensor snippet for HA |
 | `home-assistant/automations-example.yaml` | 4 worked automation examples |
 | `docs/f1-note-map.md` | Full pad/fader MIDI note & CC reference |
@@ -27,7 +33,8 @@ Traktor F1  →  USB  →  Linux host  →  midi2mqtt  →  MQTT broker (HA)  �
 
 ### Hardware
 - Native Instruments Traktor Kontrol F1 (USB)
-- A Linux host with a USB port (Raspberry Pi, NUC, any desktop)
+- A **Linux** host with a USB port — Raspberry Pi 4/5, NUC, any Debian/Ubuntu box
+  - macOS is **not supported** (see note above)
 
 ### Software
 - **[midi2mqtt](https://github.com/bzeiss/midi2mqtt)** — the upstream bridge tool
@@ -39,7 +46,7 @@ Traktor F1  →  USB  →  Linux host  →  midi2mqtt  →  MQTT broker (HA)  �
 
 ### Assumptions
 - Linux host (systemd-based, e.g. Raspberry Pi OS, Ubuntu, Debian)
-- The F1 is recognised as a class-compliant USB MIDI device (no driver needed)
+- The F1 is recognised as a class-compliant USB MIDI device (no driver needed on Linux)
 - Your MQTT broker does not require TLS (add TLS settings to the config if it does)
 
 ---
@@ -54,9 +61,11 @@ git clone https://github.com/bzeiss/midi2mqtt.git ~/midi2mqtt
 
 ### 2. Build the binary
 
+The main package is in `cmd/`:
+
 ```bash
 cd ~/midi2mqtt
-go build -o midi2mqtt .
+go build -o midi2mqtt ./cmd/
 ```
 
 Or download a pre-built binary from the
@@ -66,7 +75,7 @@ place it at `~/midi2mqtt/midi2mqtt`.
 ### 3. Clone this repo
 
 ```bash
-git clone https://github.com/<your-username>/HA-F1.git ~/HA-F1
+git clone https://github.com/CaptainDarkHeart/HA-F1.git ~/HA-F1
 ```
 
 ### 4. Configure midi2mqtt
@@ -80,30 +89,30 @@ nano ~/.config/midi2mqtt/midi2mqtt.yaml
 ```
 
 **You must change:**
-- `mqtt.broker` — set this to your Home Assistant / MQTT broker IP address
+- `mqtt_server.broker.host` — set this to your Home Assistant / MQTT broker IP address
 
 **Verify the MIDI port name:**
 
 ```bash
-~/midi2mqtt/midi2mqtt -list
+~/midi2mqtt/midi2mqtt -list-ports
 ```
 
-The F1 usually appears as `Traktor Kontrol F1 MIDI 1`. If it differs, update
-`midi.port` in the config.
+The F1 usually appears as `Traktor Kontrol F1 MIDI 1` on Linux. If it differs,
+update `midi.port` in the config.
 
 > **Security note:** Never commit passwords or credentials.
-> The config file is listed in `.gitignore`, but if you fork this repo
-> be sure your `~/.config/midi2mqtt/midi2mqtt.yaml` (with real credentials)
-> never ends up tracked in git. See `.gitignore` for patterns.
+> Your `~/.config/midi2mqtt/midi2mqtt.yaml` (with real credentials) must never
+> end up tracked in git. See `.gitignore` for the patterns that protect you.
 
 ### 5. Test before going live
 
 ```bash
-~/midi2mqtt/midi2mqtt -test -config ~/.config/midi2mqtt/midi2mqtt.yaml
+~/midi2mqtt/midi2mqtt -test
 ```
 
-Tap pads and move faders — you should see MIDI events printed to the terminal.
-Press Ctrl+C when satisfied.
+midi2mqtt finds its config automatically from `~/.config/midi2mqtt/midi2mqtt.yaml`
+(there is no `-config` flag). Tap pads and move faders — you should see MIDI
+events printed to the terminal. Press Ctrl+C when satisfied.
 
 ### 6. Install and start the systemd user service
 
@@ -111,7 +120,7 @@ Press Ctrl+C when satisfied.
 mkdir -p ~/.config/systemd/user
 cp ~/HA-F1/systemd/midi2mqtt.service ~/.config/systemd/user/midi2mqtt.service
 
-# Open the service file and verify the ExecStart path is correct for your system
+# Verify the ExecStart path matches where you built/placed the binary
 nano ~/.config/systemd/user/midi2mqtt.service
 
 systemctl --user daemon-reload
@@ -127,7 +136,8 @@ The service will now start automatically on login and restart if it crashes.
 > To run as a system service (so it starts without a logged-in user), copy to
 > `/etc/systemd/system/` instead, set `User=` to your username, and use
 > `systemctl enable --now midi2mqtt` (without `--user`). You may also need to
-> add your user to the `audio` group for MIDI access.
+> add your user to the `audio` group for MIDI access:
+> `sudo usermod -aG audio $USER`
 
 ### 7. Configure Home Assistant
 

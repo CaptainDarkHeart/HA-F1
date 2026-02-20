@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.local.midi2mqtt</string>
+
+  <!--
+    Update the path below to match where your midi2mqtt binary lives.
+    Default: cloned to ~/midi2mqtt and built with: go build -o midi2mqtt ./cmd/
+    Replace /Users/dantaylor with your actual home directory path.
+  -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/YOUR_USERNAME/midi2mqtt/midi2mqtt</string>
+  </array>
+
+  <!-- Start automatically at login -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Restart automatically if the process crashes -->
+  <key>KeepAlive</key>
+  <true/>
+
+  <!-- Log files — check these if something isn't working -->
+  <key>StandardOutPath</key>
+  <string>/tmp/midi2mqtt.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/midi2mqtt.err</string>
+</dict>
+</plist>
