@@ -1,3 +1,5 @@
+![Traktor Kontrol F1](F1.jpg)
+
 # HA-F1 — Traktor Kontrol F1 → Home Assistant via MIDI/MQTT
 
 Use your **Native Instruments Traktor Kontrol F1** as a hardware controller for
