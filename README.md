@@ -22,16 +22,16 @@ Traktor F1  →  USB  →  Linux host  →  midi2mqtt  →  MQTT broker (HA)  �
 
 ## What's in this repo
 
-| Path | Purpose |
-|------|---------|
-| `config/midi2mqtt.yaml` | Ready-to-use midi2mqtt config for Linux (standard mode) |
-| `config/midi2mqtt-macos-midi-mode.yaml` | Ready-to-use config for macOS (MIDI mode) |
-| `systemd/midi2mqtt.service` | systemd user-service for auto-start on Linux |
-| `launchagents/midi2mqtt.plist` | LaunchAgent plist for auto-start on macOS |
-| `home-assistant/configuration.yaml` | MQTT sensor snippet for HA |
-| `home-assistant/automations-example.yaml` | 4 worked automation examples |
-| `docs/f1-note-map.md` | Full pad/fader MIDI note & CC reference (Linux standard mode) |
-| `docs/f1-midi-mode.md` | MIDI mode reference, CC mappings, and macOS guide |
+| Path | Platform | Purpose |
+|------|----------|---------|
+| `config/midi2mqtt.yaml` | 🐧 Linux | Ready-to-use midi2mqtt config (standard Traktor mode) |
+| `config/midi2mqtt-macos-midi-mode.yaml` | 🍎 macOS | Ready-to-use config (MIDI Mode) |
+| `systemd/midi2mqtt.service` | 🐧 Linux | systemd user-service for auto-start |
+| `launchagents/midi2mqtt.plist` | 🍎 macOS | LaunchAgent for auto-start |
+| `home-assistant/configuration.yaml` | Both | MQTT sensor config snippet |
+| `home-assistant/automations-example.yaml` | Both | Example automations (pad presses, faders, scenes) |
+| `docs/f1-note-map.md` | 🐧 Linux | Full MIDI note reference (standard mode) |
+| `docs/f1-midi-mode.md` | 🍎 macOS | CC mapping reference and troubleshooting |
 
 ---
 
@@ -54,6 +54,17 @@ Traktor F1  →  USB  →  Linux host  →  midi2mqtt  →  MQTT broker (HA)  �
 - Linux host (systemd-based, e.g. Raspberry Pi OS, Ubuntu, Debian)
 - The F1 is recognised as a class-compliant USB MIDI device (no driver needed on Linux)
 - Your MQTT broker does not require TLS (add TLS settings to the config if it does)
+
+---
+
+## Quick Start
+
+### Choose your platform:
+
+- **Linux users:** F1 works natively as a USB MIDI device in standard Traktor mode
+- **macOS users:** F1 must be in [MIDI Mode](#f1-midi-mode-macos) (Shift+Browse on the F1)
+
+Then follow the setup steps below:
 
 ---
 
@@ -231,44 +242,87 @@ launchctl start com.local.midi2mqtt
 
 ### Building Automations in MIDI Mode
 
-In MIDI Mode, pads and buttons send **CC events** instead of note events. Adjust your automation conditions accordingly:
+In MIDI Mode, all controls send **CC (Control Change) events** via MQTT. Trigger on the `midi/events` topic and use a template condition to check the controller number and value:
 
+**Pad press** (check for value == 127):
 ```yaml
 trigger:
-  - platform: state
-    entity_id: sensor.traktor_f1_midi_event
-    to: "control_change"
+  - platform: mqtt
+    topic: "midi/events"
 condition:
   - condition: template
     value_template: >
-      {{ state_attr('sensor.traktor_f1_midi_event', 'controller') | int == 18 }}
+      {{ trigger.payload_json.controller | int == 22 and
+         trigger.payload_json.value | int == 127 }}
 ```
 
-Use `midi2mqtt -test -all-events` to discover the exact CC numbers for each pad and control on your system.
+**Fader movement** (any value 0-127):
+```yaml
+trigger:
+  - platform: mqtt
+    topic: "midi/events"
+condition:
+  - condition: template
+    value_template: >
+      {{ trigger.payload_json.controller | int == 6 }}
+action:
+  - service: light.turn_on
+    data:
+      brightness: "{{ ((trigger.payload_json.value | int) / 127 * 255) | int }}"
+```
+
+**Discover CC numbers:**
+```bash
+~/midi2mqtt/midi2mqtt -test
+```
+
+Then press pads, move faders, and note the `controller` values. See `docs/f1-midi-mode.md` for the complete reference.
 
 ---
 
 
 ## Building automations
 
-Every time you press a pad, the sensor state changes to `note_on` and its
-attributes update with `note`, `velocity`, `channel`, etc. Use a state
-trigger on `sensor.traktor_f1_midi_event` and a template condition to match
-the specific note:
+Automations trigger on MQTT events from midi2mqtt. **The trigger format differs
+based on your platform:**
+
+### Linux (standard Traktor mode) — note_on/note_off events
 
 ```yaml
 trigger:
-  - platform: state
-    entity_id: sensor.traktor_f1_midi_event
-    to: "note_on"
+  - platform: mqtt
+    topic: "midi/events"
 condition:
   - condition: template
     value_template: >
-      {{ state_attr('sensor.traktor_f1_midi_event', 'note') | int == 36 }}
+      {{ trigger.payload_json.event_type == "note_on" and
+         trigger.payload_json.note | int == 36 }}
 ```
 
-See `home-assistant/automations-example.yaml` for complete worked examples
-and `docs/f1-note-map.md` for the full note number reference.
+Use `docs/f1-note-map.md` for the full note number reference.
+
+### macOS (MIDI Mode) — CC (Control Change) events
+
+```yaml
+trigger:
+  - platform: mqtt
+    topic: "midi/events"
+condition:
+  - condition: template
+    value_template: >
+      {{ trigger.payload_json.controller | int == 22 and
+         trigger.payload_json.value | int == 127 }}
+```
+
+Use `docs/f1-midi-mode.md` for the complete CC mapping reference.
+
+### Ready-to-use examples
+
+See `home-assistant/automations-example.yaml` for complete worked examples with:
+- Simple pad-press actions (scene activation, script execution)
+- Fader-based brightness/intensity controls
+- Multi-pad preset switching
+- Button toggle controls
 
 ---
 
@@ -282,6 +336,58 @@ are pressed.
 
 Future work: a companion `mqtt2midi` bridge or a midi2mqtt output feature
 could close this loop and let HA set pad colours to reflect automation state.
+
+---
+
+## Troubleshooting
+
+### No MIDI events appearing in Home Assistant
+
+1. **Check midi2mqtt is running:**
+   ```bash
+   systemctl --user status midi2mqtt  # Linux
+   launchctl list | grep midi2mqtt     # macOS
+   ```
+
+2. **Verify MQTT broker connection:**
+   - Open Home Assistant → Developer Tools → MQTT
+   - Click "Listen to a topic"
+   - Enter `midi/events` and subscribe
+   - Press a pad on the F1 — you should see JSON payloads
+
+3. **Check midi2mqtt log:**
+   ```bash
+   journalctl --user -u midi2mqtt -f  # Linux
+   tail -f /tmp/midi2mqtt.log         # macOS
+   ```
+
+4. **Verify F1 is detected:**
+   ```bash
+   ~/midi2mqtt/midi2mqtt -list-ports
+   ```
+
+   Should show `Traktor Kontrol F1 MIDI 1` (Linux) or `Traktor Kontrol F1 - 1 Input` (macOS in MIDI Mode)
+
+5. **Test MIDI directly:**
+   ```bash
+   ~/midi2mqtt/midi2mqtt -test
+   ```
+
+   Press pads — you should see CC or note events printed
+
+### Automations not triggering
+
+1. **Wrong CC/note numbers** — use `midi2mqtt -test` to discover actual numbers on your system
+2. **Condition format** — ensure you're checking `trigger.payload_json.controller` (not `state_attr`)
+3. **Value check** — button presses send value `127`, releases send `0`
+4. **MQTT topic** — ensure automation is listening to `midi/events` topic
+
+### macOS: F1 not entering MIDI Mode
+
+- Hold **Shift** and press the **Browse** button/knob for ~2 seconds
+- The F1 should beep and restart
+- MIDI port name changes to `Traktor Kontrol F1 - 1 Input`
+- Check with `midi2mqtt -list-ports`
 
 ---
 
