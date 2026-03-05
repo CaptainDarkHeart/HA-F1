@@ -1,0 +1,84 @@
+# midi2mqtt configuration — Traktor Kontrol F1 on macOS (MIDI Mode)
+# Upstream project: https://github.com/bzeiss/midi2mqtt
+#
+# IMPORTANT: Do NOT commit passwords or credentials. See .gitignore.
+#
+# NOTE ON PLATFORM & MODE:
+# This config is for macOS running the F1 in MIDI Mode (Shift+Browse on the F1).
+#
+# MIDI Mode:
+# - Enables the F1 to work on macOS (bypasses NIHardwareAgent)
+# - Sends CC events only (no note_on/note_off)
+# - All events on channel 12 (zero-indexed, = MIDI channel 13)
+# - Different CC mappings than Linux mode — see docs/f1-midi-mode.md
+#
+# For Linux or if using the F1 in standard Traktor mode, use config/midi2mqtt.yaml instead.
+#
+# macOS MIDI port name: "Traktor Kontrol F1 - 1 Input" (when in MIDI mode)
+# Verify on your system with: midi2mqtt -list-ports
+
+mqtt_server:
+  broker:
+    host: "192.168.1.x"    # <-- CHANGE THIS to your MQTT broker / HA host IP
+    port: 1883
+    protocol: "mqtt"       # mqtt | mqtts | ws | wss
+
+  client:
+    client_id: "midi2mqtt_traktor_f1"
+    clean_session: true
+    keepalive: 60
+
+  auth:
+    username: ""
+    password: ""           # <-- fill in if your broker requires auth; NEVER commit real credentials
+
+  connection:
+    retry_interval: 10
+    max_retries: 3
+    timeout: 30
+
+mqtt_publications:
+  - type: custom_json
+    enabled: true
+    topic: "midi/events"
+    qos: 1
+    retain: false
+  - type: home_assistant
+    enabled: true
+    topic: "homeassistant/sensor/traktor_f1"
+    qos: 1
+    retain: false
+    unique_id: "traktor_f1"
+    device:
+      identifiers: ["traktor_f1"]
+      name: "Traktor F1"
+      manufacturer: "Native Instruments"
+
+midi:
+  # macOS MIDI mode port name.
+  # Confirm with: midi2mqtt -list-ports
+  # Note: This differs from Linux where it's "Traktor Kontrol F1 MIDI 1"
+  port: "Traktor Kontrol F1 - 1 Input"
+
+  event_types:
+    # MIDI Mode sends CC events on channel 12 (zero-indexed) — no note events.
+    # Include only CC events.
+    # Full CC mapping is in docs/f1-midi-mode.md; common ones:
+    # CC 6, 7, 8:   Faders 1–3
+    # CC 15, 16:    Buttons
+    # CC 18–21:     Pads (bottom-left area; continue mapping for other pads)
+    - cc:0
+    - cc:1
+    - cc:2
+    - cc:3
+    - cc:6
+    - cc:7
+    - cc:8
+    - cc:15
+    - cc:16
+    - cc:18
+    - cc:19
+    - cc:20
+    - cc:21
+
+log_level: "INFO"

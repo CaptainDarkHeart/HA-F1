@@ -97,11 +97,24 @@ each button to discover its note/CC and channel live.
 
 ```bash
 # List all MIDI ports visible on your system
-midi2mqtt -list
+midi2mqtt -list-ports
 
 # Print all incoming MIDI events in real time (no MQTT publishing)
+# (Replace the port name with your actual port name from the list above)
 midi2mqtt -test -port "Traktor Kontrol F1 MIDI 1"
+
+# To capture all events including unmapped ones:
+midi2mqtt -test -all-events -port "Traktor Kontrol F1 MIDI 1"
 ```
 
 Press each pad, fader, and button while watching the output to build your
 own complete map.
+
+---
+
+## F1 MIDI Mode (macOS Alternative)
+
+If you're using the F1 on macOS, it must be in **MIDI Mode** (Shift+Browse on the F1).
+MIDI Mode uses a different set of CC mappings instead of the note events documented above.
+
+See [F1 MIDI Mode Reference](f1-midi-mode.md) for the complete MIDI mode CC mapping and setup guide.

@@ -4,10 +4,12 @@
 # IMPORTANT: Do NOT commit passwords or credentials. See .gitignore.
 #
 # NOTE ON PLATFORM:
-# This config targets Linux (Raspberry Pi / any systemd host).
-# On macOS, NIHardwareAgent intercepts all F1 MIDI at the driver level and
-# prevents any third-party tool from receiving events — even via IAC routing.
-# The F1 must be plugged into a Linux host for midi2mqtt to work.
+# This config is for LINUX running the F1 in standard (Traktor) mode.
+#
+# For macOS, the F1 must be in MIDI Mode (Shift+Browse on the F1).
+# Use config/midi2mqtt-macos-midi-mode.yaml instead, which includes the
+# correct port name and CC event mappings for macOS MIDI mode.
+# See README section "F1 MIDI Mode (macOS)" for more details.
 #
 # Linux MIDI port name: "Traktor Kontrol F1 MIDI 1" (class-compliant, no driver needed)
 # Confirm on your system with: midi2mqtt -list-ports
