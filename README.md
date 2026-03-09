@@ -3,7 +3,7 @@
 # HA-F1 — Traktor Kontrol F1 → Home Assistant via MIDI/MQTT
 
 Use your **Native Instruments Traktor Kontrol F1** as a hardware controller for
-Home Assistant. This project wires the F1's 16 pads, 4 faders, and buttons
+Home Assistant. This project wires the F1's 20 pads, 4 faders, and buttons
 into HA automations via MQTT — no custom firmware, no hacking, just
 class-compliant USB MIDI bridged over your local network.
 
@@ -220,6 +220,7 @@ If you're using the F1 on macOS, you'll be using **MIDI Mode** instead of the de
 
 - **Event types:** MIDI Mode sends **CC (Control Change) events only** — no note_on/note_off events
 - **Channel:** All events are sent on **channel 12** (zero-indexed in MIDI; channel 13 in some tools)
+- **Pads:** All **20 pads** are available in MIDI mode (5 rows × 4 columns, CC 10–13, 14–17, 18–21, 22–25, 37–40)
 - **Faders & Buttons:** Mapped to different CC numbers than Linux mode
 
 For a complete CC mapping reference, see [F1 MIDI Mode Reference](docs/f1-midi-mode.md).
@@ -242,9 +243,11 @@ launchctl start com.local.midi2mqtt
 
 ### Building Automations in MIDI Mode
 
-In MIDI Mode, all controls send **CC (Control Change) events** via MQTT. Trigger on the `midi/events` topic and use a template condition to check the controller number and value:
+In MIDI Mode, all controls send **CC (Control Change) events** via MQTT. The F1 has **20 pads across 5 rows** — see [F1 MIDI Mode Reference](docs/f1-midi-mode.md) for the complete CC mapping.
 
-**Pad press** (check for value == 127):
+Trigger on the `midi/events` topic and use a template condition to check the controller number and value:
+
+**Pad press example** (Row 1, col 1 = CC 22, value 127):
 ```yaml
 trigger:
   - platform: mqtt
@@ -255,6 +258,13 @@ condition:
       {{ trigger.payload_json.controller | int == 22 and
          trigger.payload_json.value | int == 127 }}
 ```
+
+**Other pads:**
+- Row 0 (bottom): CC 37–40
+- Row 1: CC 22–25
+- Row 2: CC 18–21
+- Row 3: CC 14–17
+- Row 4 (top): CC 10–13
 
 **Fader movement** (any value 0-127):
 ```yaml
