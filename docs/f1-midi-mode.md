@@ -72,16 +72,35 @@ The following CC numbers are mapped to F1 controls. Some are confirmed; others m
 | Button (TBC) | 15 | 127 | 0 | To be confirmed |
 | Button (TBC) | 16 | 127 | 0 | To be confirmed |
 
-### Pads (Bottom-Left Area)
+### Pads (5 Rows × 4 Columns, All 20 Pads Usable in MIDI Mode)
 
 | Physical Position | CC Number | Value | Status |
 |-------------------|-----------|-------|--------|
-| Bottom-left pad | 18 | 127 (press), 0 (release) | ✓ |
-| Pad (row 1, col 2) | 19 | 127, 0 | ✓ |
-| Pad (row 1, col 3) | 20 | 127, 0 | ✓ |
-| Pad (row 1, col 4) | 21 | 127, 0 | ✓ |
-
-**Remaining pads (rows 2–4):** Run discovery command below.
+| **Row 0 (Bottom, grey)** | | | |
+| Row 0, col 1 | 37 | 127 (press), 0 (release) | ✓ |
+| Row 0, col 2 | 38 | 127, 0 | ✓ |
+| Row 0, col 3 | 39 | 127, 0 | ✓ |
+| Row 0, col 4 | 40 | 127, 0 | ✓ |
+| **Row 1 (Presets)** | | | |
+| Row 1, col 1 | 22 | 127, 0 | ✓ |
+| Row 1, col 2 | 23 | 127, 0 | ✓ |
+| Row 1, col 3 | 24 | 127, 0 | ✓ |
+| Row 1, col 4 | 25 | 127, 0 | ✓ |
+| **Row 2 (Colors)** | | | |
+| Row 2, col 1 | 18 | 127, 0 | ✓ |
+| Row 2, col 2 | 19 | 127, 0 | ✓ |
+| Row 2, col 3 | 20 | 127, 0 | ✓ |
+| Row 2, col 4 | 21 | 127, 0 | ✓ |
+| **Row 3** | | | |
+| Row 3, col 1 | 14 | 127, 0 | ✓ |
+| Row 3, col 2 | 15 | 127, 0 | ✓ |
+| Row 3, col 3 | 16 | 127, 0 | ✓ |
+| Row 3, col 4 | 17 | 127, 0 | ✓ |
+| **Row 4 (Top)** | | | |
+| Row 4, col 1 | 10 | 127, 0 | ✓ |
+| Row 4, col 2 | 11 | 127, 0 | ✓ |
+| Row 4, col 3 | 12 | 127, 0 | ✓ |
+| Row 4, col 4 | 13 | 127, 0 | ✓ |
 
 ---
 
